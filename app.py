@@ -193,20 +193,24 @@ def display_interactive_quiz(questions, question_type):
     if question_type == "Multiple Choice":
         options = q.get('options', [])
         if options:
+            prev = st.session_state.user_answers.get(i)
+            prev_index = next((j for j, o in enumerate(options) if o.startswith(prev)), None) if prev else None
             choice = st.radio(
                 "Select your answer:",
                 options,
                 key=f"q_{i}",
-                index=None,
+                index=prev_index,
                 horizontal=False
             )
             st.session_state.user_answers[i] = choice[0] if choice else None
     else:
+        prev = st.session_state.user_answers.get(i)
+        prev_index = ["True", "False"].index(prev) if prev in ["True", "False"] else None
         choice = st.radio(
             "Select your answer:",
             ["True", "False"],
             key=f"q_{i}",
-            index=None,
+            index=prev_index,
             horizontal=False
         )
         st.session_state.user_answers[i] = choice
