@@ -128,78 +128,95 @@ def parse_quiz_response(response, question_type):
     return questions
 
 def display_interactive_quiz(questions, question_type):
-    """Display interactive quiz with answer checking"""
+    """Display one question at a time for smooth mobile experience"""
     if 'user_answers' not in st.session_state:
         st.session_state.user_answers = {}
     if 'show_results' not in st.session_state:
         st.session_state.show_results = False
-    
+    if 'current_q' not in st.session_state:
+        st.session_state.current_q = 0
+
+    total = len(questions)
+
+    if st.session_state.show_results:
+        # Results screen
+        correct = sum(
+            1 for i, q in enumerate(questions)
+            if st.session_state.user_answers.get(i) and
+            st.session_state.user_answers.get(i, '')[0] == q.get('answer', '').strip()[0]
+        )
+        score = (correct / total) * 100
+        st.markdown(f"### 🎯 Score: {correct}/{total} ({score:.0f}%)")
+        if score >= 80:
+            st.success("Excellent work! 🏆")
+        elif score >= 60:
+            st.info("Good job! Keep practicing. 👍")
+        else:
+            st.warning("Keep studying, you'll get there! 💪")
+
+        for i, q in enumerate(questions):
+            ans = st.session_state.user_answers.get(i, '')
+            correct_ans = q.get('answer', '').strip()
+            is_correct = ans and ans[0] == correct_ans[0]
+            icon = "✅" if is_correct else "❌"
+            st.markdown(f"{icon} **Q{i+1}:** {q['question']}")
+            if not is_correct:
+                st.caption(f"Correct answer: {correct_ans}")
+
+        st.markdown("---")
+        if st.button("🔄 Try Again", use_container_width=True):
+            st.session_state.user_answers = {}
+            st.session_state.show_results = False
+            st.session_state.current_q = 0
+            st.rerun()
+        return
+
+    # Single question view
+    i = st.session_state.current_q
+    q = questions[i]
+
+    # Progress
+    st.progress((i) / total)
+    st.caption(f"Question {i+1} of {total}")
+    st.markdown(f"### {q['question']}")
     st.markdown("---")
-    st.markdown(f"### 📋 Interactive Quiz ({len(questions)} Questions)")
-    st.markdown("Select your answers and click 'Submit Quiz' to see results!")
-    
-    # Display questions
-    for i, q in enumerate(questions):
-        st.markdown(f"**Question {i+1}:** {q['question']}")
-        
-        if question_type == "Multiple Choice":
-            options = q.get('options', [])
-            if options:
-                choice = st.radio(
-                    f"Select answer for Q{i+1}:",
-                    options,
-                    key=f"q_{i}",
-                    index=None,
-                    label_visibility="collapsed",
-                    horizontal=False
-                )
-                st.session_state.user_answers[i] = choice[0] if choice else None
-        else:  # True/False
+
+    if question_type == "Multiple Choice":
+        options = q.get('options', [])
+        if options:
             choice = st.radio(
-                f"Select answer for Q{i+1}:",
-                ["True", "False"],
+                "Select your answer:",
+                options,
                 key=f"q_{i}",
                 index=None,
-                label_visibility="collapsed",
                 horizontal=False
             )
-            st.session_state.user_answers[i] = choice
-        
-        # Show result if submitted
-        if st.session_state.show_results:
-            correct_answer = q.get('answer', '').strip()
-            user_answer = st.session_state.user_answers.get(i, '')
-            
-            if question_type == "Multiple Choice":
-                is_correct = user_answer == correct_answer
-            else:
-                is_correct = user_answer.lower() == correct_answer.lower()
-            
-            if is_correct:
-                st.success(f"✅ Correct! Answer: {correct_answer}")
-            else:
-                st.error(f"❌ Wrong! Correct answer: {correct_answer}")
-        
-        st.markdown("---")
-    
-    # Submit button
-    col1, col2, col3 = st.columns([1, 1, 1])
+            st.session_state.user_answers[i] = choice[0] if choice else None
+    else:
+        choice = st.radio(
+            "Select your answer:",
+            ["True", "False"],
+            key=f"q_{i}",
+            index=None,
+            horizontal=False
+        )
+        st.session_state.user_answers[i] = choice
+
+    st.markdown("---")
+    col1, col2 = st.columns(2)
+    with col1:
+        if i > 0:
+            if st.button("← Prev", use_container_width=True):
+                st.session_state.current_q -= 1
+                st.rerun()
     with col2:
-        if not st.session_state.show_results:
-            if st.button("📝 Submit Quiz", use_container_width=True):
-                st.session_state.show_results = True
+        if i < total - 1:
+            if st.button("Next →", use_container_width=True):
+                st.session_state.current_q += 1
                 st.rerun()
         else:
-            # Calculate score
-            correct = sum(1 for i, q in enumerate(questions) 
-                         if st.session_state.user_answers.get(i, '')[0] == q.get('answer', '').strip()[0])
-            score = (correct / len(questions)) * 100
-            
-            st.markdown(f"### 🎯 Your Score: {correct}/{len(questions)} ({score:.0f}%)")
-            
-            if st.button("🔄 Try Again", use_container_width=True):
-                st.session_state.user_answers = {}
-                st.session_state.show_results = False
+            if st.button("📝 Submit", use_container_width=True):
+                st.session_state.show_results = True
                 st.rerun()
 
 def generate_quiz(file_path, num_questions, question_type):
