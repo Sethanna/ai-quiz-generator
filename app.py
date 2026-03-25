@@ -100,31 +100,40 @@ def get_llm():
 
 def parse_quiz_response(response, question_type):
     """Parse AI response into structured quiz data"""
+    import re
     questions = []
     lines = response.strip().split('\n')
-    
+
     current_q = {}
     for line in lines:
         line = line.strip()
         if not line:
             continue
-            
+
         if line.startswith('Q') and ':' in line:
             if current_q:
                 questions.append(current_q)
             current_q = {'question': line.split(':', 1)[1].strip(), 'options': []}
+
         elif question_type == "Multiple Choice":
-            if line.startswith(('A)', 'B)', 'C)', 'D)')):
-                current_q['options'].append(line)
+            # Handle options all on one line: "A) opt B) opt C) opt D) opt"
+            if re.search(r'[A-D]\)', line):
+                # Split by A) B) C) D) pattern
+                parts = re.split(r'(?=[A-D]\))', line)
+                for part in parts:
+                    part = part.strip()
+                    if part and re.match(r'^[A-D]\)', part):
+                        current_q.setdefault('options', []).append(part)
             elif line.startswith('Answer:'):
                 current_q['answer'] = line.split(':', 1)[1].strip()
+
         else:  # True/False
             if line.startswith('Answer:'):
                 current_q['answer'] = line.split(':', 1)[1].strip()
-    
+
     if current_q:
         questions.append(current_q)
-    
+
     return questions
 
 def display_interactive_quiz(questions, question_type):
