@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import tempfile
 from pathlib import Path
@@ -260,12 +261,33 @@ Generate all {num_questions} questions now:"""
         else:
             return None, f"❌ Error: {str(e)}"
 
+def show_preview():
+    """Show mobile phone simulator"""
+    st.title("📱 Mobile Preview")
+    st.markdown("Interactive phone simulator — see how the app looks on mobile")
+    try:
+        with open("static/preview.html", "r") as f:
+            html_content = f.read()
+        # Strip the outer html/body to embed cleanly, inject in iframe-like component
+        st.components.v1.html(html_content, height=900, scrolling=False)
+    except FileNotFoundError:
+        st.error("Preview file not found.")
+
+
 def main():
+    # Sidebar
+    with st.sidebar:
+        page = st.radio("Navigate", ["🏠 Quiz Generator", "📱 Mobile Preview"], label_visibility="collapsed")
+        st.divider()
+
+    if page == "📱 Mobile Preview":
+        show_preview()
+        return
+
     # Header
     st.title("📝 AI Quiz Generator")
     st.markdown("Generate quiz questions from any document using AI")
-    
-    # Sidebar
+
     with st.sidebar:
         st.header("⚙️ Settings")
         
