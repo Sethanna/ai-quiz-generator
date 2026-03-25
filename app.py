@@ -150,7 +150,8 @@ def display_interactive_quiz(questions, question_type):
                     options,
                     key=f"q_{i}",
                     index=None,
-                    label_visibility="collapsed"
+                    label_visibility="collapsed",
+                    horizontal=False
                 )
                 st.session_state.user_answers[i] = choice[0] if choice else None
         else:  # True/False
@@ -159,7 +160,8 @@ def display_interactive_quiz(questions, question_type):
                 ["True", "False"],
                 key=f"q_{i}",
                 index=None,
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                horizontal=False
             )
             st.session_state.user_answers[i] = choice
         
