@@ -297,19 +297,24 @@ def generate_pdf(quiz_text, title):
     """Generate a PDF from quiz text"""
     from fpdf import FPDF
     pdf = FPDF()
+    pdf.set_margins(15, 15, 15)
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, f"Quiz: {title}", ln=True, align="C")
+    safe_title = title.encode('latin-1', 'replace').decode('latin-1')
+    pdf.cell(0, 10, f"Quiz: {safe_title}", ln=True, align="C")
     pdf.ln(5)
-    pdf.set_font("Helvetica", size=11)
+
+    pdf.set_font("Helvetica", size=10)
     for line in quiz_text.split('\n'):
         line = line.strip()
         if not line:
-            pdf.ln(4)
+            pdf.ln(3)
             continue
-        # Encode to latin-1 safely
         safe_line = line.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 7, safe_line)
+        if safe_line:
+            pdf.multi_cell(0, 6, safe_line, align="L")
     return bytes(pdf.output())
 
 
