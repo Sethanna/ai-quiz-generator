@@ -294,28 +294,32 @@ Generate all {num_questions} questions now:"""
             return None, f"❌ Error: {str(e)}"
 
 def generate_pdf(quiz_text, title):
-    """Generate a PDF from quiz text"""
-    from fpdf import FPDF
-    pdf = FPDF()
-    pdf.set_margins(15, 15, 15)
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    """Generate a PDF from quiz text using reportlab"""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.units import mm
+    import io
 
-    pdf.set_font("Helvetica", "B", 16)
-    safe_title = title.encode('latin-1', 'replace').decode('latin-1')
-    pdf.cell(0, 10, f"Quiz: {safe_title}", ln=True, align="C")
-    pdf.ln(5)
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            rightMargin=20*mm, leftMargin=20*mm,
+                            topMargin=20*mm, bottomMargin=20*mm)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=16, spaceAfter=12)
+    body_style  = ParagraphStyle('body',  parent=styles['Normal'],   fontSize=10, spaceAfter=4, leading=14)
 
-    pdf.set_font("Helvetica", size=10)
+    story = [Paragraph(f"Quiz: {title}", title_style)]
     for line in quiz_text.split('\n'):
         line = line.strip()
         if not line:
-            pdf.ln(3)
-            continue
-        safe_line = line.encode('latin-1', 'replace').decode('latin-1')
-        if safe_line:
-            pdf.multi_cell(0, 6, safe_line, align="L")
-    return bytes(pdf.output())
+            story.append(Spacer(1, 4*mm))
+        else:
+            safe = line.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+            story.append(Paragraph(safe, body_style))
+
+    doc.build(story)
+    return buffer.getvalue()
 
 
 def show_preview():
