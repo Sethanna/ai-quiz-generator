@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Quiz Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'Inter',sans-serif;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh;}
+
+    /* ── Phone shell ── */
+    .phone{
+      width:390px;height:844px;background:#fff;border-radius:50px;
+      overflow:hidden;position:relative;
+      box-shadow:0 0 0 10px #1a1a1a,0 0 0 12px #333,0 40px 100px rgba(0,0,0,.9);
+    }
+    @media(max-width:430px){
+      body{background:#fff;align-items:flex-start;}
+      .phone{width:100vw;height:100dvh;border-radius:0;box-shadow:none;}
+    }
+
+    /* ── Dynamic island ── */
+    .island{
+      position:absolute;top:12px;left:50%;transform:translateX(-50%);
+      width:120px;height:34px;background:#000;border-radius:20px;z-index:100;
+      display:flex;align-items:center;justify-content:flex-end;padding-right:10px;gap:6px;
+    }
+    .island .cam{width:10px;height:10px;background:#1a1a1a;border-radius:50%;border:2px solid #222;}
+
+    /* ── Status bar ── */
+    .statusbar{
+      position:absolute;top:0;left:0;right:0;height:54px;
+      display:flex;justify-content:space-between;align-items:flex-end;
+      padding:0 28px 8px;font-size:.72rem;font-weight:600;z-index:99;color:#fff;
+    }
+    .statusbar.dark{color:#111;}
+    .sb-right{display:flex;gap:5px;align-items:center;}
+
+    /* ── Screens ── */
+    .screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;}
+    .screen.active{display:flex;}
+
+    /* ══════════════════════════════
+       SPLASH
+    ══════════════════════════════ */
+    #s-splash{
+      background:linear-gradient(160deg,#1b5e20 0%,#4CAF50 50%,#81C784 100%);
+      align-items:center;justify-content:center;
+    }
+    .splash-logo{font-size:5rem;margin-bottom:16px;animation:pop .6s ease;}
+    .splash-title{font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-0.5px;}
+    .splash-sub{font-size:.85rem;color:rgba(255,255,255,.75);margin-top:6px;}
+    .splash-bar{
+      position:absolute;bottom:60px;width:160px;height:4px;
+      background:rgba(255,255,255,.25);border-radius:2px;overflow:hidden;
+    }
+    .splash-fill{height:100%;background:#fff;border-radius:2px;animation:load 2s ease forwards;}
+
+    /* ══════════════════════════════
+       ONBOARDING
+    ══════════════════════════════ */
+    #s-onboard{background:#fff;}
+    .onboard-hero{
+      height:340px;background:linear-gradient(160deg,#e8f5e9,#c8e6c9);
+      display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;
+    }
+    .onboard-hero .big{font-size:5rem;}
+    .onboard-hero .floating{animation:float 3s ease-in-out infinite;}
+    .onboard-body{padding:28px 24px;flex:1;display:flex;flex-direction:column;}
+    .onboard-body h2{font-size:1.6rem;font-weight:800;color:#111;line-height:1.2;margin-bottom:10px;}
+    .onboard-body p{font-size:.88rem;color:#666;line-height:1.6;flex:1;}
+    .dots{display:flex;gap:6px;margin-bottom:20px;}
+    .dot{width:8px;height:8px;border-radius:4px;background:#ddd;}
+    .dot.on{background:#4CAF50;width:22px;}
+
+    /* ══════════════════════════════
+       HOME
+    ══════════════════════════════ */
+    #s-home{background:#f5f7fa;}
+    .home-header{
+      background:linear-gradient(135deg,#2e7d32,#4CAF50);
+      padding:60px 22px 28px;color:#fff;
+    }
+    .home-header .greeting{font-size:.82rem;opacity:.8;margin-bottom:4px;}
+    .home-header h2{font-size:1.4rem;font-weight:800;}
+    .home-header .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      background:rgba(255,255,255,.2);border-radius:20px;
+      padding:5px 12px;font-size:.72rem;margin-top:10px;
+    }
+    .home-stats{
+      display:flex;gap:10px;padding:16px;margin-top:-20px;
+    }
+    .stat-card{
+      flex:1;background:#fff;border-radius:16px;padding:14px;
+      box-shadow:0 4px 16px rgba(0,0,0,.07);text-align:center;
+    }
+    .stat-card .s-num{font-size:1.4rem;font-weight:800;color:#4CAF50;}
+    .stat-card .s-lbl{font-size:.65rem;color:#aaa;margin-top:2px;}
+    .section-title{font-size:.8rem;font-weight:700;color:#999;letter-spacing:.8px;padding:4px 16px 8px;text-transform:uppercase;}
+    .action-card{
+      background:#fff;border-radius:20px;margin:0 16px 12px;
+      padding:18px;display:flex;align-items:center;gap:14px;
+      box-shadow:0 4px 16px rgba(0,0,0,.06);cursor:pointer;
+      transition:transform .15s;
+    }
+    .action-card:active{transform:scale(.98);}
+    .action-icon{
+      width:52px;height:52px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;
+    }
+    .action-card h4{font-size:.9rem;font-weight:700;color:#111;margin-bottom:3px;}
+    .action-card p{font-size:.75rem;color:#999;}
+    .action-arrow{margin-left:auto;color:#ccc;font-size:1.1rem;}
+
+    /* ══════════════════════════════
+       UPLOAD
+    ══════════════════════════════ */
+    #s-upload{background:#f5f7fa;}
+    .topbar{
+      background:#fff;padding:54px 16px 14px;
+      display:flex;align-items:center;gap:12px;
+      border-bottom:1px solid #f0f0f0;
+    }
+    .topbar h3{font-size:1rem;font-weight:700;color:#111;flex:1;}
+    .icon-btn{
+      width:36px;height:36px;border-radius:10px;background:#f5f5f5;
+      border:none;display:flex;align-items:center;justify-content:center;
+      font-size:1rem;cursor:pointer;
+    }
+    .upload-zone{
+      border:2.5px dashed #4CAF50;border-radius:20px;
+      margin:16px;padding:36px 20px;text-align:center;
+      background:linear-gradient(135deg,#f0fff4,#e8f5e9);cursor:pointer;
+      transition:all .2s;
+    }
+    .upload-zone:active{background:#d4edda;}
+    .upload-zone .uz-icon{font-size:3rem;margin-bottom:12px;}
+    .upload-zone h3{font-size:1rem;font-weight:700;color:#2e7d32;margin-bottom:6px;}
+    .upload-zone p{font-size:.78rem;color:#888;}
+    .format-chips{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+    .chip{background:#fff;border:1px solid #c8e6c9;border-radius:20px;padding:4px 12px;font-size:.7rem;color:#4CAF50;font-weight:600;}
+    .settings-card{background:#fff;border-radius:20px;margin:0 16px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,.06);}
+    .settings-card h4{font-size:.85rem;font-weight:700;color:#111;margin-bottom:14px;}
+    .setting-row{margin-bottom:16px;}
+    .setting-row label{font-size:.78rem;color:#666;display:flex;justify-content:space-between;margin-bottom:8px;}
+    .setting-row label span{color:#4CAF50;font-weight:700;}
+    .track{background:#eee;height:5px;border-radius:3px;position:relative;}
+    .fill{background:linear-gradient(90deg,#4CAF50,#81C784);height:100%;width:25%;border-radius:3px;}
+    .thumb{width:18px;height:18px;background:#fff;border:3px solid #4CAF50;border-radius:50%;position:absolute;top:-7px;left:23%;box-shadow:0 2px 6px rgba(76,175,80,.4);}
+    .seg-control{display:flex;background:#f0f0f0;border-radius:10px;padding:3px;gap:3px;}
+    .seg{flex:1;padding:7px;text-align:center;border-radius:8px;font-size:.75rem;font-weight:600;color:#999;cursor:pointer;transition:all .2s;}
+    .seg.on{background:#fff;color:#4CAF50;box-shadow:0 2px 6px rgba(0,0,0,.1);}
+
+    /* ══════════════════════════════
+       GENERATING
+    ══════════════════════════════ */
+    #s-gen{background:linear-gradient(160deg,#1b5e20,#4CAF50);align-items:center;justify-content:center;}
+    .gen-body{text-align:center;padding:30px;}
+    .gen-ring{
+      width:120px;height:120px;border-radius:50%;
+      border:4px solid rgba(255,255,255,.2);
+      border-top-color:#fff;
+      animation:spin 1s linear infinite;
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 24px;font-size:2.5rem;
+    }
+    .gen-body h2{color:#fff;font-size:1.3rem;font-weight:800;margin-bottom:8px;}
+    .gen-body p{color:rgba(255,255,255,.75);font-size:.82rem;margin-bottom:28px;}
+    .gen-prog{background:rgba(255,255,255,.2);border-radius:4px;height:6px;width:260px;overflow:hidden;margin:0 auto 10px;}
+    .gen-fill{background:#fff;height:100%;width:0%;border-radius:4px;transition:width .4s ease;}
+    .gen-label{color:rgba(255,255,255,.8);font-size:.75rem;font-weight:600;}
+    .gen-steps{margin-top:28px;display:flex;flex-direction:column;gap:10px;width:260px;}
+    .gen-step{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.6);font-size:.78rem;}
+    .gen-step .st-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);flex-shrink:0;}
+    .gen-step.done{color:#fff;}
+    .gen-step.done .st-dot{background:#fff;}
+    .gen-step.active-step{color:#fff;font-weight:600;}
+    .gen-step.active-step .st-dot{background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.3);}
+
+    /* ══════════════════════════════
+       QUIZ
+    ══════════════════════════════ */
+    #s-quiz{background:#f5f7fa;}
+    .quiz-top{background:#fff;padding:54px 16px 12px;border-bottom:1px solid #f0f0f0;}
+    .quiz-top-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .quiz-top-row h3{font-size:.95rem;font-weight:700;flex:1;color:#111;}
+    .q-counter{font-size:.75rem;color:#999;font-weight:600;}
+    .prog-bar{background:#eee;height:5px;border-radius:3px;overflow:hidden;}
+    .prog-bar-fill{background:linear-gradient(90deg,#4CAF50,#81C784);height:100%;border-radius:3px;transition:width .4s;}
+    .q-scroll{flex:1;overflow-y:auto;padding:14px 16px 100px;}
+    .q-card{background:#fff;border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.06);}
+    .q-tag{display:inline-flex;align-items:center;gap:5px;background:#e8f5e9;color:#2e7d32;border-radius:20px;padding:4px 10px;font-size:.68rem;font-weight:700;margin-bottom:12px;}
+    .q-text{font-size:.92rem;font-weight:600;color:#111;line-height:1.55;margin-bottom:16px;}
+    .option{
+      border:2px solid #eee;border-radius:12px;padding:13px 14px;
+      margin-bottom:9px;display:flex;align-items:center;gap:12px;
+      cursor:pointer;transition:all .15s;
+    }
+    .option:active{transform:scale(.99);}
+    .option.sel{border-color:#4CAF50;background:#f0fff4;}
+    .option.correct{border-color:#4CAF50;background:#e8f5e9;}
+    .option.wrong{border-color:#f44336;background:#ffebee;}
+    .opt-badge{
+      width:28px;height:28px;border-radius:8px;background:#f5f5f5;
+      display:flex;align-items:center;justify-content:center;
+      font-size:.72rem;font-weight:800;color:#999;flex-shrink:0;
+    }
+    .sel .opt-badge{background:#4CAF50;color:#fff;}
+    .correct .opt-badge{background:#4CAF50;color:#fff;}
+    .wrong .opt-badge{background:#f44336;color:#fff;}
+    .opt-text{font-size:.83rem;color:#333;font-weight:500;}
+    .sel .opt-text{color:#2e7d32;font-weight:600;}
+    .quiz-footer{
+      position:absolute;bottom:0;left:0;right:0;
+      background:#fff;padding:12px 16px 28px;
+      border-top:1px solid #f0f0f0;display:flex;gap:10px;
+    }
+    .btn-prev{flex:1;padding:13px;border-radius:12px;border:2px solid #eee;background:#fff;font-size:.85rem;font-weight:700;color:#999;cursor:pointer;}
+    .btn-next{flex:2;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#4CAF50,#66BB6A);color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(76,175,80,.35);}
+
+    /* ══════════════════════════════
+       RESULTS
+    ══════════════════════════════ */
+    #s-result{background:#f5f7fa;}
+    .result-hero{
+      background:linear-gradient(160deg,#1b5e20,#4CAF50);
+      padding:60px 24px 40px;text-align:center;color:#fff;
+    }
+    .result-hero h2{font-size:1.1rem;font-weight:600;opacity:.85;margin-bottom:16px;}
+    .score-donut{
+      width:140px;height:140px;border-radius:50%;
+      background:conic-gradient(#fff 0% 80%,rgba(255,255,255,.2) 80% 100%);
+      display:flex;align-items:center;justify-content:center;
+      margin:0 auto 16px;
+      box-shadow:0 8px 32px rgba(0,0,0,.2);
+    }
+    .score-inner{
+      width:110px;height:110px;border-radius:50%;
+      background:linear-gradient(135deg,#2e7d32,#4CAF50);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+    }
+    .score-inner .pct{font-size:2rem;font-weight:800;color:#fff;}
+    .score-inner .lbl{font-size:.6rem;color:rgba(255,255,255,.8);letter-spacing:1px;}
+    .result-hero .grade{font-size:1.1rem;font-weight:700;margin-bottom:4px;}
+    .result-hero .sub{font-size:.8rem;opacity:.75;}
+    .result-stats{display:flex;gap:10px;padding:16px;margin-top:-20px;}
+    .rs-card{flex:1;background:#fff;border-radius:16px;padding:14px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.07);}
+    .rs-card .rn{font-size:1.5rem;font-weight:800;}
+    .rs-card .rl{font-size:.65rem;color:#aaa;margin-top:2px;}
+    .green{color:#4CAF50;}.red{color:#f44336;}.blue{color:#2196F3;}
+    .review-card{background:#fff;border-radius:16px;margin:0 16px 10px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,.05);display:flex;align-items:center;gap:12px;}
+    .review-card .ri{font-size:1.2rem;}
+    .review-card .rt{font-size:.8rem;color:#333;font-weight:600;flex:1;}
+    .review-card .rc{font-size:.72rem;color:#aaa;}
+    .result-actions{padding:16px;display:flex;flex-direction:column;gap:10px;}
+    .btn-full{width:100%;padding:14px;border-radius:14px;border:none;font-size:.9rem;font-weight:700;cursor:pointer;}
+    .btn-primary{background:linear-gradient(135deg,#4CAF50,#66BB6A);color:#fff;box-shadow:0 4px 14px rgba(76,175,80,.35);}
+    .btn-secondary{background:#fff;color:#4CAF50;border:2px solid #4CAF50;}
+
+    /* ══════════════════════════════
+       BOTTOM NAV
+    ══════════════════════════════ */
+    .bnav{
+      position:absolute;bottom:0;left:0;right:0;
+      background:#fff;border-top:1px solid #f0f0f0;
+      display:flex;padding:8px 0 20px;z-index:50;
+    }
+    .bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px;}
+    .bni .bi{font-size:1.3rem;}
+    .bni .bl{font-size:.58rem;color:#bbb;font-weight:600;}
+    .bni.on .bl{color:#4CAF50;}
+    .bni.on .bi{filter:drop-shadow(0 2px 4px rgba(76,175,80,.4));}
+
+    /* ══════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════ */
+    @keyframes spin{to{transform:rotate(360deg);}}
+    @keyframes pop{0%{transform:scale(0);opacity:0;}80%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+    @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+    @keyframes load{0%{width:0%;}100%{width:100%;}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    .fade-up{animation:fadeUp .4s ease forwards;}
+  </style>
+</head>
+<body>
+<div class="phone">
+  <div class="island"><div class="cam"></div></div>
+
+  <!-- ══ SPLASH ══ -->
+  <div class="screen active" id="s-splash">
+    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div class="splash-logo">📝</div>
+    <div class="splash-title">QuizAI</div>
+    <div class="splash-sub">Powered by Groq · llama-3.3</div>
+    <div class="splash-bar"><div class="splash-fill"></div></div>
+  </div>
+
+  <!-- ══ ONBOARDING ══ -->
+  <div class="screen" id="s-onboard">
+    <div class="statusbar dark"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div class="onboard-hero">
+      <div class="big floating">🧠</div>
+      <div style="font-size:.85rem;color:#4CAF50;font-weight:700;">AI-Powered Learning</div>
+    </div>
+    <div class="onboard-body">
+      <h2>Turn any document into a quiz instantly</h2>
+      <p>Upload PDFs, Word docs, PowerPoints or text files. Our AI reads and generates smart quiz questions in seconds.</p>
+      <div class="dots"><div class="dot on"></div><div class="dot"></div><div class="dot"></div></div>
+      <button class="btn-full btn-primary" onclick="go('s-home')">Get Started →</button>
+    </div>
+  </div>
+
+  <!-- ══ HOME ══ -->
+  <div class="screen" id="s-home">
+    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
+      <div class="home-header">
+        <div class="greeting">Good morning 👋</div>
+        <h2>AI Quiz Generator</h2>
+        <div class="badge">🟢 Groq AI Connected</div>
+      </div>
+      <div class="home-stats">
+        <div class="stat-card"><div class="s-num">12</div><div class="s-lbl">Quizzes Made</div></div>
+        <div class="stat-card"><div class="s-num">84%</div><div class="s-lbl">Avg Score</div></div>
+        <div class="stat-card"><div class="s-num">5</div><div class="s-lbl">Docs Used</div></div>
+      </div>
+      <div class="section-title">Quick Actions</div>
+      <div class="action-card" onclick="go('s-upload')">
+        <div class="action-icon" style="background:#e8f5e9;">📄</div>
+        <div><h4>New Quiz</h4><p>Upload a document to generate</p></div>
+        <div class="action-arrow">›</div>
+      </div>
+      <div class="action-card" onclick="go('s-quiz')">
+        <div class="action-icon" style="background:#e3f2fd;">📋</div>
+        <div><h4>Continue Quiz</h4><p>lecture_notes.pdf · 3/5 done</p></div>
+        <div class="action-arrow">›</div>
+      </div>
+      <div class="action-card" onclick="go('s-result')">
+        <div class="action-icon" style="background:#fff3e0;">🎯</div>
+        <div><h4>Last Results</h4><p>Biology Quiz · 80% score</p></div>
+        <div class="action-arrow">›</div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bni on"><div class="bi">🏠</div><div class="bl">Home</div></div>
+      <div class="bni" onclick="go('s-upload')"><div class="bi">➕</div><div class="bl">New Quiz</div></div>
+      <div class="bni" onclick="go('s-quiz')"><div class="bi">📋</div><div class="bl">Quiz</div></div>
+      <div class="bni" onclick="go('s-result')"><div class="bi">🎯</div><div class="bl">Results</div></div>
+    </div>
+  </div>
+
+  <!-- ══ UPLOAD ══ -->
+  <div class="screen" id="s-upload">
+    <div class="statusbar dark"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div class="topbar">
+      <button class="icon-btn" onclick="go('s-home')">←</button>
+      <h3>New Quiz</h3>
+      <button class="icon-btn">⋯</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
+      <div class="upload-zone" onclick="go('s-gen');startGen()">
+        <div class="uz-icon">📂</div>
+        <h3>Tap to Upload Document</h3>
+        <p>or drag and drop your file here</p>
+        <div class="format-chips">
+          <div class="chip">PDF</div><div class="chip">DOCX</div>
+          <div class="chip">PPT</div><div class="chip">TXT</div>
+        </div>
+      </div>
+      <div class="settings-card">
+        <h4>⚙️ Quiz Settings</h4>
+        <div class="setting-row">
+          <label>Number of Questions <span id="qnum">5</span></label>
+          <div class="track"><div class="fill"></div><div class="thumb"></div></div>
+        </div>
+        <div class="setting-row" style="margin-bottom:0">
+          <label style="margin-bottom:8px;">Question Type</label>
+          <div class="seg-control">
+            <div class="seg on" onclick="setSeg(this)">Multiple Choice</div>
+            <div class="seg" onclick="setSeg(this)">True / False</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:0 16px;margin-top:12px;">
+        <button class="btn-full btn-primary" onclick="go('s-gen');startGen()">🚀 Generate Quiz</button>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bni" onclick="go('s-home')"><div class="bi">🏠</div><div class="bl">Home</div></div>
+      <div class="bni on"><div class="bi">➕</div><div class="bl">New Quiz</div></div>
+      <div class="bni" onclick="go('s-quiz')"><div class="bi">📋</div><div class="bl">Quiz</div></div>
+      <div class="bni" onclick="go('s-result')"><div class="bi">🎯</div><div class="bl">Results</div></div>
+    </div>
+  </div>
+
+  <!-- ══ GENERATING ══ -->
+  <div class="screen" id="s-gen">
+    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div class="gen-body">
+      <div class="gen-ring">⚙️</div>
+      <h2>Generating Your Quiz</h2>
+      <p>Groq AI is reading your document<br>and crafting smart questions</p>
+      <div class="gen-prog"><div class="gen-fill" id="gbar"></div></div>
+      <div class="gen-label" id="glabel">Initializing...</div>
+      <div class="gen-steps" id="gsteps">
+        <div class="gen-step" id="gs0"><div class="st-dot"></div>Loading document</div>
+        <div class="gen-step" id="gs1"><div class="st-dot"></div>Extracting text content</div>
+        <div class="gen-step" id="gs2"><div class="st-dot"></div>Analyzing with Groq AI</div>
+        <div class="gen-step" id="gs3"><div class="st-dot"></div>Generating questions</div>
+        <div class="gen-step" id="gs4"><div class="st-dot"></div>Formatting quiz</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ QUIZ ══ -->
+  <div class="screen" id="s-quiz">
+    <div class="statusbar dark"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div class="quiz-top">
+      <div class="quiz-top-row">
+        <button class="icon-btn" onclick="go('s-home')">←</button>
+        <h3>Biology Quiz</h3>
+        <span class="q-counter">2 / 5</span>
+      </div>
+      <div class="prog-bar"><div class="prog-bar-fill" style="width:40%"></div></div>
+    </div>
+    <div class="q-scroll">
+      <div class="q-card fade-up">
+        <div class="q-tag">📚 Question 2 of 5</div>
+        <div class="q-text">What is the primary function of mitochondria in a eukaryotic cell?</div>
+        <div class="option sel" onclick="pick(this)">
+          <div class="opt-badge">A</div>
+          <div class="opt-text">Energy production (ATP synthesis)</div>
+        </div>
+        <div class="option" onclick="pick(this)">
+          <div class="opt-badge">B</div>
+          <div class="opt-text">Protein synthesis and folding</div>
+        </div>
+        <div class="option" onclick="pick(this)">
+          <div class="opt-badge">C</div>
+          <div class="opt-text">DNA replication and repair</div>
+        </div>
+        <div class="option" onclick="pick(this)">
+          <div class="opt-badge">D</div>
+          <div class="opt-text">Cell membrane regulation</div>
+        </div>
+      </div>
+    </div>
+    <div class="quiz-footer">
+      <button class="btn-prev" onclick="go('s-upload')">← Prev</button>
+      <button class="btn-next" onclick="go('s-result')">Next Question →</button>
+    </div>
+    <div class="bnav" style="bottom:70px;border-top:none;padding:0;">
+    </div>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div class="screen" id="s-result">
+    <div class="statusbar"><span>9:41</span><div class="sb-right"><span>▲▲▲</span><span>●●●</span><span>🔋</span></div></div>
+    <div style="flex:1;overflow-y:auto;padding-bottom:80px;">
+      <div class="result-hero">
+        <h2>Quiz Complete! 🎉</h2>
+        <div class="score-donut">
+          <div class="score-inner">
+            <div class="pct">80%</div>
+            <div class="lbl">SCORE</div>
+          </div>
+        </div>
+        <div class="grade">Great Performance!</div>
+        <div class="sub">You're doing really well. Keep it up!</div>
+      </div>
+      <div class="result-stats">
+        <div class="rs-card"><div class="rn green">4</div><div class="rl">Correct</div></div>
+        <div class="rs-card"><div class="rn red">1</div><div class="rl">Wrong</div></div>
+        <div class="rs-card"><div class="rn blue">5</div><div class="rl">Total</div></div>
+      </div>
+      <div class="section-title">Question Review</div>
+      <div class="review-card"><div class="ri">✅</div><div class="rt">Mitochondria function</div><div class="rc">Correct</div></div>
+      <div class="review-card"><div class="ri">✅</div><div class="rt">Cell membrane structure</div><div class="rc">Correct</div></div>
+      <div class="review-card"><div class="ri">❌</div><div class="rt">DNA replication steps</div><div class="rc">Wrong</div></div>
+      <div class="review-card"><div class="ri">✅</div><div class="rt">Photosynthesis process</div><div class="rc">Correct</div></div>
+      <div class="review-card"><div class="ri">✅</div><div class="rt">Enzyme catalysis</div><div class="rc">Correct</div></div>
+      <div class="result-actions">
+        <button class="btn-full btn-primary" onclick="go('s-upload')">🔄 New Quiz</button>
+        <button class="btn-full btn-secondary" onclick="go('s-quiz')">📋 Retry Quiz</button>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bni" onclick="go('s-home')"><div class="bi">🏠</div><div class="bl">Home</div></div>
+      <div class="bni" onclick="go('s-upload')"><div class="bi">➕</div><div class="bl">New Quiz</div></div>
+      <div class="bni" onclick="go('s-quiz')"><div class="bi">📋</div><div class="bl">Quiz</div></div>
+      <div class="bni on"><div class="bi">🎯</div><div class="bl">Results</div></div>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+  function go(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function pick(el){
+    el.closest('.q-card').querySelectorAll('.option').forEach(o=>o.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+
+  function setSeg(el){
+    el.closest('.seg-control').querySelectorAll('.seg').forEach(s=>s.classList.remove('on'));
+    el.classList.add('on');
+  }
+
+  function startGen(){
+    const bar=document.getElementById('gbar');
+    const lbl=document.getElementById('glabel');
+    const steps=[
+      [15,'Loading document...',0],
+      [30,'Extracting text content...',1],
+      [55,'Analyzing with Groq AI...',2],
+      [80,'Generating questions...',3],
+      [100,'Formatting quiz...',4]
+    ];
+    bar.style.width='0%';
+    let i=0;
+    document.querySelectorAll('.gen-step').forEach(s=>{s.classList.remove('done','active-step');});
+    const t=setInterval(()=>{
+      if(i>=steps.length){clearInterval(t);setTimeout(()=>go('s-quiz'),500);return;}
+      bar.style.width=steps[i][0]+'%';
+      lbl.textContent=steps[i][1];
+      if(i>0) document.getElementById('gs'+(i-1)).classList.replace('active-step','done');
+      document.getElementById('gs'+steps[i][2]).classList.add('active-step');
+      i++;
+    },700);
+  }
+
+  // Auto-advance splash
+  setTimeout(()=>go('s-onboard'), 2500);
+</script>
+</body>
+</html>
