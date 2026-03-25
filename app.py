@@ -293,6 +293,26 @@ Generate all {num_questions} questions now:"""
         else:
             return None, f"❌ Error: {str(e)}"
 
+def generate_pdf(quiz_text, title):
+    """Generate a PDF from quiz text"""
+    from fpdf import FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, f"Quiz: {title}", ln=True, align="C")
+    pdf.ln(5)
+    pdf.set_font("Helvetica", size=11)
+    for line in quiz_text.split('\n'):
+        line = line.strip()
+        if not line:
+            pdf.ln(4)
+            continue
+        # Encode to latin-1 safely
+        safe_line = line.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 7, safe_line)
+    return bytes(pdf.output())
+
+
 def show_preview():
     """Show mobile phone simulator"""
     st.title("📱 Mobile Preview")
@@ -336,7 +356,7 @@ def main():
         num_questions = st.slider(
             "Number of Questions",
             min_value=1,
-            max_value=20,
+            max_value=30,
             value=5,
             help="Select how many questions to generate"
         )
@@ -431,11 +451,12 @@ def main():
             st.markdown("---")
             col1, col2, col3 = st.columns([1, 1, 1])
             with col2:
+                pdf_data = generate_pdf(st.session_state.quiz_raw, Path(uploaded_file.name).stem)
                 st.download_button(
-                    label="📥 Download Quiz",
-                    data=st.session_state.quiz_raw,
-                    file_name=f"quiz_{Path(uploaded_file.name).stem}.txt",
-                    mime="text/plain",
+                    label="📥 Download Quiz (PDF)",
+                    data=pdf_data,
+                    file_name=f"quiz_{Path(uploaded_file.name).stem}.pdf",
+                    mime="application/pdf",
                     use_container_width=True
                 )
 
